@@ -1,5 +1,4 @@
-def main():
-    print(1)
+from budget_app.cli import main
 
 if __name__ == "__main__":
     main()
