@@ -1,7 +1,7 @@
 import argparse
 from budget_app.services import *
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(description="argument 설명")
 
     subparser = parser.add_subparsers(dest="command", required=True)
@@ -47,6 +47,10 @@ def main():
         help="예산 금액",
     )
 
+    return parser
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
 
     if args.command == "add":
