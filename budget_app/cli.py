@@ -1,5 +1,6 @@
 import argparse
-from budget_app.services import *
+from .storage import TransactionRepository, CategoryRepository
+from .services import *
 
 def build_parser():
     parser = argparse.ArgumentParser(description="argument 설명")
@@ -49,12 +50,70 @@ def build_parser():
 
     return parser
 
+
+def add_transactions(service: TransactionService):
+    while True:
+        date_text = input("날짜를 입력하세요 (YYYY-MM-DD): ")
+
+        try:
+            service.validate_date(date_text=date_text)
+            break
+        except ValueError as error:
+            print(f"[에러] {error}")
+
+    while True:
+        raw_type = input("타입을 입력하세요 (income / expense): ")
+
+        try:
+            transaction_type = service.validate_type(transaction_type=raw_type)
+            break
+        except ValueError as error:
+            print(f"[에러] {error}")
+
+    while True:
+        category = input("등록할 카테고리를 입력하세요: ")
+
+        try:
+            service.validate_category(category=category)
+            break
+        except ValueError as error:
+            print(f"[에러] {error}")
+
+    while True:
+        try:
+            amount = int(input("금액(양수)을 입력하세요: "))
+
+            if amount <= 0:
+                raise ValueError("금액은 0보다 커야 합니다")
+
+            break
+        except ValueError as error:
+            print(f"[에러] {error}")
+
+    memo = input("(선택)메모를 입력하세요: ")
+    raw_tag = input("태그를 쉼표로 구분하여 입력해주세요. 없으면 엔터를 클릭해주세요: ")
+    transaction_tag = [tag.strip() for tag in raw_tag.split(",") if tag.strip()]
+
+    transaction = service.add_transaction(
+        date_text=date_text,
+        transaction_type=transaction_type,
+        category=category,
+        amount=amount,
+        memo=memo,
+        tags=transaction_tag
+    )
+
+    print(f"[저장 완료] id = {transaction.id}")
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
+    repository = TransactionRepository()
+    category_repository = CategoryRepository()
+    service = TransactionService(repository, category_repository)
 
     if args.command == "add":
-        add()
+        add_transactions(service)
     elif args.command == "list":
         list_transactions(limit=args.limit)
     elif args.command == "update":
