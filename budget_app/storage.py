@@ -1,6 +1,8 @@
 import json
+import heapq
 from dataclasses import asdict
 from pathlib import Path
+from typing import Iterator, Any
 
 from .models import Transaction
 
@@ -20,6 +22,21 @@ class TransactionRepository:
 
         with self.file_path.open("a", encoding="utf-8") as file:
             file.write(json_line + "\n")
+
+    def read_transaction(self)-> Iterator[dict[str, Any]]:
+        with self.file_path.open("r", encoding="utf-8") as file:
+            for line in file:
+                if not line.strip():
+                    continue
+
+                yield json.loads(line)
+
+    def list(self, limit: int = 10) -> list[dict[str, Any]]:
+        return heapq.nlargest(
+            limit,
+            self.read_transaction(),
+            key=lambda transaction: transaction["date"]
+        )
 
 class CategoryRepository:
     def __init__(self, data_dir: str = "./data"):

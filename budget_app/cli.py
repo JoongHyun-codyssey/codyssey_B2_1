@@ -94,7 +94,7 @@ def add_transactions(service: TransactionService):
     raw_tag = input("태그를 쉼표로 구분하여 입력해주세요. 없으면 엔터를 클릭해주세요: ")
     transaction_tag = [tag.strip() for tag in raw_tag.split(",") if tag.strip()]
 
-    transaction = service.add_transaction(
+    transaction = service.add_transaction_service(
         date_text=date_text,
         transaction_type=transaction_type,
         category=category,
@@ -104,6 +104,12 @@ def add_transactions(service: TransactionService):
     )
 
     print(f"[저장 완료] id = {transaction.id}")
+
+def list_transaction(service: TransactionService, limit)-> None:
+    data = service.list_transaction_service(limit)
+    for list_data in data:
+        print(
+            f"{list_data['id']} | {list_data['date']} | {list_data['type']} | {list_data['category']} | {list_data['amount']} | {list_data['memo']} | {list_data['tags']}")
 
 def main():
     parser = build_parser()
@@ -115,7 +121,7 @@ def main():
     if args.command == "add":
         add_transactions(service)
     elif args.command == "list":
-        list_transactions(limit=args.limit)
+        list_transaction(service, limit=args.limit)
     elif args.command == "update":
         update_transactions(id=args.id)
     elif args.command == "delete":

@@ -1,17 +1,18 @@
 from uuid import uuid4
 from datetime import date
 
-from typing import Literal
-from typing import Optional
+from typing import Literal, Optional, Any
 from .storage import TransactionRepository, CategoryRepository
 from .models import Transaction
+
+space = "\n"
 
 class TransactionService:
     def __init__(self, repository: TransactionRepository, category_repository: CategoryRepository):
         self.repository = repository
         self.category_repository = category_repository
 
-    def add_transaction(
+    def add_transaction_service(
             self,
             date_text: str,
             transaction_type: Literal["income","expense"],
@@ -33,6 +34,11 @@ class TransactionService:
         self.repository.save(transaction)
         return transaction
 
+    def list_transaction_service(self, limit:int)-> list[dict[str, Any]]:
+        if limit <= 0:
+            raise ValueError("조회 개수는 1개 이상이어야 합니다.")
+        return self.repository.list(limit=limit)
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":
@@ -45,7 +51,9 @@ class TransactionService:
 
     def validate_category(self, category: str) -> None:
         if not self.category_repository.exists(category):
-            raise ValueError(f"등록되지 않은 카테고리입니다: {category}")
+            print(f"{space * 10}등록되지 않은 카테고리입니다.\n카테고리를 먼저 등록해주세요: {category}")
+            quit()
+            # raise ValueError(f"등록되지 않은 카테고리입니다: {category}")
 
     @staticmethod
     def validate_date(date_text: str)-> str:
@@ -60,9 +68,6 @@ class TransactionService:
             raise ValueError("날짜는 YYYY-MM-DD 형식으로 입력해 주세요.")
 
         return date_text
-
-def list_transactions(limit: int = 10):
-    print(f"list123 + {limit}")
 
 def update_transactions(id: int):
     print(f"update + {id}")
