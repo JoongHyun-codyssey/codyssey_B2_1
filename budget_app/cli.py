@@ -112,7 +112,7 @@ def list_transactions(service: TransactionService, limit)-> None:
         print(
             f"{list_data['id']} | {list_data['date']} | {list_data['type']} | {list_data['category']} | {list_data['amount']} | {list_data['memo']} | {', '.join(list_data['tags'])}")
 
-## 2026-09-21 while문 통하여 사용자 입력값 받아서 업데이트 ( B안 )
+## ( B안 - 대화형 기반 )
 def update_transactions(
         service: TransactionService,
         args_id:str
@@ -168,6 +168,24 @@ def update_transactions(
 
     print(f"[수정 완료] id = {args_id}")
 
+def delete_transaction(
+    service: TransactionService,
+    args_id: str
+    ) -> None:
+    confirmation = input("정말 삭제하시겠습니까? (y/n): ").strip().lower()
+
+    if confirmation != "y":
+        print("삭제를 취소합니다.")
+        return
+
+    try:
+        service.delete_transactions_service(id=args_id)
+    except ValueError as error:
+        print(f"[에러]: {error}")
+    else:
+        print(f"[삭제 완료] id = {args_id}")
+
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -176,13 +194,13 @@ def main():
     service = TransactionService(repository, category_repository)
 
     if args.command == "add":
-        add_transactions(service)
+        add_transactions(service=service)
     elif args.command == "list":
-        list_transactions(service, limit=args.limit)
+        list_transactions(service=service, limit=args.limit)
     elif args.command == "update":
         update_transactions(service=service, args_id=args.id)
     elif args.command == "delete":
-        delete_transactions(id=args.id)
+        delete_transaction(service=service, args_id=args.id)
     elif args.command == "search":
         search_transactions(date_from=args.date_from, date_to=args.date_to, category=args.category, search_type=args.type)
     elif args.command == "summary":

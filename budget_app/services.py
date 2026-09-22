@@ -52,6 +52,9 @@ class TransactionService:
 
         self.repository.update(transaction_id=id, field_name=field_name, new_value=new_value)
 
+    def delete_transactions_service(self, id: str) -> None:
+        self.repository.delete(transaction_id=id)
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":
@@ -80,9 +83,6 @@ class TransactionService:
             raise ValueError("날짜는 YYYY-MM-DD 형식으로 입력해 주세요.")
 
         return date_text
-
-def delete_transactions(id: int):
-    print(f"delete + {id}")
 
 def search_transactions(
         date_from: Optional[str] = None,

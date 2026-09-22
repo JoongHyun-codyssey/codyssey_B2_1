@@ -70,6 +70,40 @@ class TransactionRepository:
             if temp_path.exists():
                 temp_path.unlink()
 
+    def delete(self, transaction_id : str) -> None:
+        temp_path = self.file_path.with_suffix(".tmp")
+        found = False
+
+        try:
+            with (
+                self.file_path.open("r", encoding="utf-8") as source,
+                temp_path.open("w", encoding="utf-8") as target,
+            ):
+                for line in source:
+                    if not line.strip():
+                        continue
+
+                    transaction = json.loads(line)
+
+                    # 삭제 대상은 임시 파일 작성x
+                    if transaction["id"] == transaction_id:
+                        found = True
+                        continue
+
+                    target.write(line)
+
+            if not found:
+                raise ValueError("해당 ID의 거래가 없습니다.")
+
+            # 임시 -> 원본 교체
+            temp_path.replace(self.file_path)
+
+        finally:
+            # 실패했을 때 남은 임시 파일 정리
+            if temp_path.exists():
+                temp_path.unlink()
+
+
 
 
 class CategoryRepository:

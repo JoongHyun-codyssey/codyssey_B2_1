@@ -1,7 +1,6 @@
 {"id": "f1a27c93-6b84-4d15-9e02-c83b7a406d51", "date": "2026-09-21", "type": "expense", "category": "food", "amount": 9000, "memo": "점심 김치찌개", "tags": ["점심", "외식"]}
 {"id": "8c4d91a2-3f67-4b80-a125-7d09e6c348bf", "date": "2026-09-21", "type": "expense", "category": "food", "amount": 4500, "memo": "아이스 아메리카노", "tags": ["카페"]}
 {"id": "2e9b650c-a718-43d2-bf04-6c81e397a520", "date": "2026-09-20", "type": "expense", "category": "food", "amount": 32000, "memo": "저녁 치킨", "tags": ["저녁", "배달"]}
-{"id": "d7063ab8-92c5-4e61-8f30-b17a049c625d", "date": "2026-09-20", "type": "expense", "category": "food", "amount": 16000, "memo": "친구에게 받은 식사 정산금", "tags": ["정산"]}
 {"id": "6b15e2d0-c493-47a8-915f-e8203c76bd49", "date": "2026-09-19", "type": "expense", "category": "food", "amount": 28700, "memo": "닭가슴살과 계란 구매", "tags": ["장보기", "식단"]}
 {"id": "a93c740e-5d16-4b29-a860-2f71c508ed34", "date": "2026-09-18", "type": "expense", "category": "food", "amount": 6500, "memo": "샌드위치", "tags": ["아침"]}
 {"id": "45e8b019-7a62-4c35-bd91-903f6e2a784c", "date": "2026-09-17", "type": "expense", "category": "food", "amount": 12000, "memo": "", "tags": []}
