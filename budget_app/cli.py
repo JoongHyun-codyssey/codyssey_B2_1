@@ -1,9 +1,10 @@
+from argparse import ArgumentParser
 from typing import Literal
 import argparse
 from .storage import TransactionRepository, CategoryRepository
 from .services import *
 
-def build_parser():
+def build_parser() -> ArgumentParser:
     parser = argparse.ArgumentParser(description="argument 설명")
 
     subparser = parser.add_subparsers(dest="command", required=True)
@@ -14,7 +15,6 @@ def build_parser():
 
     update_parser = subparser.add_parser("update", help="업데이트 명령어")
     update_parser.add_argument("--id", type=str, required=True, help="[require] id str for update")
-    update_parser.add_argument("--date", type=str, help="YYYY-MM-DD")
 
     delete_parser = subparser.add_parser("delete", help="삭제 명령어")
     delete_parser.add_argument("--id", type=str, required=True, help="id str for delete")
@@ -29,6 +29,7 @@ def build_parser():
 
     summary_parser = subparser.add_parser("summary", help="월별 요약 명령어")
     summary_parser.add_argument("--month", dest="date_month", type=str, help="YYYY-MM")
+    summary_parser.add_argument("--top", dest="top_n", type=int, help="카테고리별 지출 상위 N개 (기본값: 3)",)
 
     budget_parser = subparser.add_parser("budget", help="예산 명령어")
 
@@ -51,8 +52,8 @@ def build_parser():
 
     return parser
 
-
-def add_transactions(service: TransactionService):
+# 거래 추가
+def add_transactions(service: TransactionService) -> None:
     while True:
         date_text = input("날짜를 입력하세요 (YYYY-MM-DD): ")
 
@@ -106,13 +107,14 @@ def add_transactions(service: TransactionService):
 
     print(f"[저장 완료] id = {transaction.id}")
 
+# 목록 조회
 def list_transactions(service: TransactionService, limit)-> None:
     data = service.list_transaction_service(limit)
     for list_data in data:
         print(
             f"{list_data['id']} | {list_data['date']} | {list_data['type']} | {list_data['category']} | {list_data['amount']} | {list_data['memo']} | {', '.join(list_data['tags'])}")
 
-## ( B안 - 대화형 기반 )
+## 수정 ( B안 - 대화형 기반 )
 def update_transactions(
         service: TransactionService,
         args_id:str
@@ -168,6 +170,7 @@ def update_transactions(
 
     print(f"[수정 완료] id = {args_id}")
 
+# 삭제
 def delete_transactions(
     service: TransactionService,
     args_id: str
@@ -185,6 +188,7 @@ def delete_transactions(
     else:
         print(f"[삭제 완료] id = {args_id}")
 
+# 검색 스트리밍 처리
 def search_transactions(
         service: TransactionService,
         date_from: Optional[str] = None,
@@ -193,7 +197,7 @@ def search_transactions(
         search_type: Optional[Literal["income", "expense"]] = None,
         memo: Optional[str] = None,
         tag: Optional[str] = None,
-):
+) -> None:
     try:
         transactions = service.search_transactions_service(
             date_from=date_from,
@@ -216,12 +220,54 @@ def search_transactions(
     except ValueError as error:
         print(f"[에러]: {error}")
 
+def summary_transaction(
+        service: TransactionService,
+        date_month: str,
+        top_n: Optional[int] = None,
+)-> None:
+    try:
+        result = service.summary_transaction_service(date_month=date_month, top_n=top_n)
+
+        if result["count"] == 0:
+            print("해당 월의 거래 내역이 없습니다.")
+            return
+
+        print(
+            f"총 수입: {result['total_income']}원\n"
+            f"총 지출: {result['total_expense']}원\n"
+            f"잔액: {result['balance']}원\n"
+            f"예산: {result['budget_amount']}원 (사용률 {result['usage_rate']}%)\n"
+        )
+
+        if result["warning_msg"] is not None:
+            print(f"{result['warning_msg']}\n")
+
+        top_categories = result["top_categories"]
+        if top_categories is not None:
+            if not top_categories:
+                print("지출 내역이 없습니다.")
+            else:
+                print(f"지출 TOP {top_n}")
+
+                for rank, (category, amount) in enumerate(top_categories, start=1):
+                    print(f"{rank}) {category} {amount:,}원")
+
+            # print(
+            #     f"지출 TOP 3\n"
+            #     f"1) {result['top_categories'][0][0]} {result['top_categories'][0][1]}원\n"
+            #     f"2) {result['top_categories'][1][0]} {result['top_categories'][1][1]}원\n"
+            #     f"3) {result['top_categories'][2][0]} {result['top_categories'][2][1]}원\n"
+            # )
+    except ValueError as error:
+        print(f"잘못된 입력입니다. {error}")
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
     repository = TransactionRepository()
     category_repository = CategoryRepository()
-    service = TransactionService(repository, category_repository)
+    budget_repository = BudgetRepository()
+    service = TransactionService(repository, category_repository, budget_repository)
 
     if args.command == "add":
         add_transactions(service=service)
@@ -234,7 +280,7 @@ def main():
     elif args.command == "search":
         search_transactions(service=service, date_from=args.date_from, date_to=args.date_to, category=args.category, search_type=args.type, memo=args.q, tag=args.tags)
     elif args.command == "summary":
-        summary(date_month=args.date_month)
+        summary_transaction(service=service, date_month=args.date_month, top_n=args.top_n)
     elif args.command == "budget":
         if args.budget_command == "set":
             budget_set(date_month=args.date_month, amount=args.amount)

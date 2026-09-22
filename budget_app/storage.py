@@ -2,7 +2,7 @@ import json
 import heapq
 from dataclasses import asdict
 from pathlib import Path
-from typing import Iterator, Any
+from typing import Iterator, Any, Optional
 
 from .models import Transaction
 
@@ -122,8 +122,6 @@ class TransactionRepository:
                 )
 
 
-
-
 class CategoryRepository:
     def __init__(self, data_dir: str = "./data"):
         self.file_path = Path(data_dir) / "categories.jsonl"
@@ -140,3 +138,22 @@ class CategoryRepository:
                     return True
 
         return False
+
+class BudgetRepository:
+    def __init__(self, data_dir: str = "./data"):
+        self.file_path = Path(data_dir) / "budgets.jsonl"
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        self.file_path.touch(exist_ok=True)
+
+    def get_amount(self, month: str) -> Optional[int]:
+        with self.file_path.open("r", encoding="utf-8") as file:
+            for line in file:
+                if not line.strip():
+                    continue
+
+                budget = json.loads(line)
+
+                if budget["month"] == month:
+                    return budget["amount"]
+
+        return None

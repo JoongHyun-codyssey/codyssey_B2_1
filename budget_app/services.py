@@ -3,15 +3,20 @@ from uuid import uuid4
 from datetime import date
 from pathlib import Path
 from typing import Literal, Optional, Any, Iterator
-from .storage import TransactionRepository, CategoryRepository
+from .storage import TransactionRepository, CategoryRepository, BudgetRepository
 from .models import Transaction
 
 space = "\n"
 
 class TransactionService:
-    def __init__(self, repository: TransactionRepository, category_repository: CategoryRepository):
+    def __init__(self,
+                 repository: TransactionRepository,
+                 category_repository: CategoryRepository,
+                 budget_repository: BudgetRepository
+                 ):
         self.repository = repository
         self.category_repository = category_repository
+        self.budget_repository = budget_repository
 
     def add_transaction_service(
             self,
@@ -53,10 +58,10 @@ class TransactionService:
 
         self.repository.update(transaction_id=id, field_name=field_name, new_value=new_value)
 
-    def delete_transactions_service(self, id: str) -> None:
+    def delete_transaction_service(self, id: str) -> None:
         self.repository.delete(transaction_id=id)
 
-    def search_transactions_service(
+    def search_transaction_service(
             self,
             date_from: Optional[str] = None,
             date_to: Optional[str] = None,
@@ -138,6 +143,77 @@ class TransactionService:
 
             temp_dir.rmdir()
 
+    def summary_transaction_service(
+            self,
+            date_month : str,
+            top_n: Optional[int] = None,
+            ):
+        total_income = 0
+        total_expense = 0
+        category_expenses = {}
+        top_categories = None
+        warning_msg = None
+        usage_rate = 0
+        count = 0
+
+        for transaction in self.repository.read_transaction():
+            if transaction["date"][:7] != date_month:
+                continue
+
+            count += 1
+            amount = transaction["amount"]
+
+            if transaction["type"] == "income":
+                total_income += amount
+            else:
+                total_expense += amount
+
+                category = transaction["category"]
+
+                category_expenses[category] = (
+                    category_expenses.get(category, 0) + amount
+                )
+
+        # 잔액
+        balance = total_income - total_expense
+
+        # 지출 top 3
+        if top_n is not None:
+            if top_n <= 1:
+                raise ValueError("TOP 개수는 1 이상이어야 합니다.")
+
+            top_categories = heapq.nlargest(
+                top_n,
+                category_expenses.items(),
+                key=lambda item:item[1],
+            )
+
+        budget_amount = self.budget_repository.get_amount(month=date_month)
+
+        if budget_amount is not None:
+            if budget_amount <= 0:
+                raise ValueError("예산은 0보다 커야 합니다.")
+
+            # 예산 사용률
+            usage_rate = total_expense / budget_amount * 100
+
+            if total_expense > usage_rate:
+                warning_msg = "예산 대비 사용률이 초과했습니다!"
+
+        else:
+            budget_amount = 0
+
+        return {
+            "count" : count,
+            "total_income" : total_income,
+            "total_expense" : total_expense,
+            "balance" : balance,
+            "top_categories" : top_categories,
+            "budget_amount" : budget_amount,
+            "usage_rate" : usage_rate,
+            "warning_msg" : warning_msg
+        }
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":
@@ -166,6 +242,20 @@ class TransactionService:
             raise ValueError("날짜는 YYYY-MM-DD 형식으로 입력해 주세요.")
 
         return date_text
+
+    @staticmethod
+    def validate_month(month_text: str) -> str:
+        try:
+            parsed_date = date.fromisoformat(month_text + "-01")
+        except ValueError:
+            raise ValueError(
+                "올바른 월을 YYYY-MM 형식으로 입력해 주세요."
+            ) from None
+
+        if parsed_date.isoformat()[:7] != month_text:
+            raise ValueError("월은 YYYY-MM 형식으로 입력해 주세요.")
+
+        return month_text
 
 def summary(date_month:str):
     print(f"summary + {date_month}")

@@ -89,8 +89,8 @@ python -m budget_app search --from 2026-09-01 --to 2026-09-30
 python -m budget_app search --category food --type expense
 python -m budget_app search --q 점심 --tag 외식
 
-# 거래 수정: 옵션 방식으로 고정, 생략한 필드는 유지
-python -m budget_app update --id <id> --amount 12000 --memo "점심 식사"
+# 거래 수정: 대화형 기반
+python -m budget_app update --id <id>
 
 # 거래 삭제
 python -m budget_app delete --id <id>
