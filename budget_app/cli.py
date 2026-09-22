@@ -1,3 +1,4 @@
+from typing import Literal
 import argparse
 from .storage import TransactionRepository, CategoryRepository
 from .services import *
@@ -12,11 +13,11 @@ def build_parser():
     list_parser.add_argument("--limit", type=int, default=10, help="기본값 10")
 
     update_parser = subparser.add_parser("update", help="업데이트 명령어")
-    update_parser.add_argument("--id", type=int, required=True, help="id int for update")
+    update_parser.add_argument("--id", type=str, required=True, help="[require] id str for update")
     update_parser.add_argument("--date", type=str, help="YYYY-MM-DD")
 
     delete_parser = subparser.add_parser("delete", help="삭제 명령어")
-    delete_parser.add_argument("--id", type=int, required=True, help="id int for delete")
+    delete_parser.add_argument("--id", type=str, required=True, help="id str for delete")
 
     search_parser = subparser.add_parser("search", help="검색 명령어")
     search_parser.add_argument("--from", dest="date_from", type=str, help="시작일 YYYY-MM-DD")
@@ -105,11 +106,67 @@ def add_transactions(service: TransactionService):
 
     print(f"[저장 완료] id = {transaction.id}")
 
-def list_transaction(service: TransactionService, limit)-> None:
+def list_transactions(service: TransactionService, limit)-> None:
     data = service.list_transaction_service(limit)
     for list_data in data:
         print(
-            f"{list_data['id']} | {list_data['date']} | {list_data['type']} | {list_data['category']} | {list_data['amount']} | {list_data['memo']} | {list_data['tags']}")
+            f"{list_data['id']} | {list_data['date']} | {list_data['type']} | {list_data['category']} | {list_data['amount']} | {list_data['memo']} | {', '.join(list_data['tags'])}")
+
+## 2026-09-21 while문 통하여 사용자 입력값 받아서 업데이트 ( B안 )
+def update_transactions(
+        service: TransactionService,
+        args_id:str
+    ) -> None:
+
+    while True:
+        raw_choice = input("수정할 필드를 선택하세요.\n1.날짜\n2.타입\n3.카테고리\n4.가격\n5.메모\n6.태그\n번호를 입력하세요: ")
+        try:
+            field_choice = int(raw_choice)
+            if field_choice not in(1,2,3,4,5,6):
+                raise ValueError(f"범위에 맞는 번호를 선택해주세요.\n{field_choice}")
+            break
+        except ValueError:
+            print(f"잘못 입력되었습니다.\n{raw_choice}")
+
+
+    field_map = {
+        1: "date",
+        2: "type",
+        3: "category",
+        4: "amount",
+        5: "memo",
+        6: "tags",
+    }
+
+    field_name = field_map[field_choice]
+
+    while True:
+        raw_value = input(f"{field_name}의 새 값을 입력하세요: ")
+
+        try:
+            if field_name == "amount":
+                new_value = int(raw_value)
+            elif field_name == "tags":
+                new_value = [
+                    tag.strip()
+                    for tag in raw_value.split(",")
+                    if tag.strip()
+                ]
+            else:
+                new_value = raw_value
+
+            service.update_transaction_service(
+                id=args_id,
+                field_name=field_name,
+                new_value=new_value
+            )
+            break
+
+        except ValueError as error:
+            print(f"[에러]: {error}")
+
+
+    print(f"[수정 완료] id = {args_id}")
 
 def main():
     parser = build_parser()
@@ -121,9 +178,9 @@ def main():
     if args.command == "add":
         add_transactions(service)
     elif args.command == "list":
-        list_transaction(service, limit=args.limit)
+        list_transactions(service, limit=args.limit)
     elif args.command == "update":
-        update_transactions(id=args.id)
+        update_transactions(service=service, args_id=args.id)
     elif args.command == "delete":
         delete_transactions(id=args.id)
     elif args.command == "search":

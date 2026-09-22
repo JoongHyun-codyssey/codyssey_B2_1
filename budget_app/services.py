@@ -39,6 +39,19 @@ class TransactionService:
             raise ValueError("조회 개수는 1개 이상이어야 합니다.")
         return self.repository.list(limit=limit)
 
+    def update_transaction_service(self, id:str, field_name:str, new_value) -> None:
+        if field_name == "date":
+            self.validate_date(new_value)
+        elif field_name == "type":
+            self.validate_type(new_value)
+        elif field_name == "category":
+            self.validate_category(new_value)
+        elif field_name == "amount":
+                if type(new_value) is not int or new_value <= 0:
+                    raise ValueError("금액은 0보다 큰 정수여야 합니다.")
+
+        self.repository.update(transaction_id=id, field_name=field_name, new_value=new_value)
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":
@@ -53,7 +66,6 @@ class TransactionService:
         if not self.category_repository.exists(category):
             print(f"{space * 10}등록되지 않은 카테고리입니다.\n카테고리를 먼저 등록해주세요: {category}")
             quit()
-            # raise ValueError(f"등록되지 않은 카테고리입니다: {category}")
 
     @staticmethod
     def validate_date(date_text: str)-> str:
@@ -68,9 +80,6 @@ class TransactionService:
             raise ValueError("날짜는 YYYY-MM-DD 형식으로 입력해 주세요.")
 
         return date_text
-
-def update_transactions(id: int):
-    print(f"update + {id}")
 
 def delete_transactions(id: int):
     print(f"delete + {id}")
