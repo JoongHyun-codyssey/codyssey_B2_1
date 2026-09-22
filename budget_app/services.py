@@ -214,6 +214,14 @@ class TransactionService:
             "warning_msg" : warning_msg
         }
 
+    def budget_set(self, date_month: str, amount: int) -> None:
+        month_text = self.validate_month(date_month)
+
+        if type(amount) is not int or amount <= 0:
+            raise ValueError("예산은 0보다 큰 정수여야 합니다.")
+
+        self.budget_repository.set_amount(month=date_month, amount=amount)
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":
@@ -256,9 +264,3 @@ class TransactionService:
             raise ValueError("월은 YYYY-MM 형식으로 입력해 주세요.")
 
         return month_text
-
-def summary(date_month:str):
-    print(f"summary + {date_month}")
-
-def budget_set(date_month:str, amount:int):
-    print(f"budget_set + {date_month} + {amount}")

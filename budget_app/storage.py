@@ -145,6 +145,42 @@ class BudgetRepository:
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
         self.file_path.touch(exist_ok=True)
 
+    def set_amount(self, month: str, amount: int) -> None:
+        temp_path = self.file_path.with_suffix(".tmp")
+        found = False
+
+        try:
+            with self.file_path.open("r", encoding="utf-8") as source, \
+                temp_path.open("w", encoding="utf-8") as target:
+
+                for line in source:
+                    if not line.strip():
+                        continue
+
+                    budget = json.loads(line)
+
+                    if budget["month"] == month:
+                        budget["amount"] = amount
+                        found = True
+
+                    target.write(
+                        json.dumps(budget, ensure_ascii=False) + "\n"
+                    )
+
+                if not found:
+                    target.write(
+                        json.dumps(
+                            {"month": month, "amount": amount},
+                            ensure_ascii=False,
+                        ) + "\n"
+                    )
+
+                temp_path.replace(self.file_path)
+
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
+
     def get_amount(self, month: str) -> Optional[int]:
         with self.file_path.open("r", encoding="utf-8") as file:
             for line in file:

@@ -80,6 +80,9 @@ def add_transactions(service: TransactionService) -> None:
             break
         except ValueError as error:
             print(f"[에러] {error}")
+        except OSError as error:
+            print(f"[파일 읽기 오류] {error}")
+            return
 
     while True:
         try:
@@ -96,16 +99,21 @@ def add_transactions(service: TransactionService) -> None:
     raw_tag = input("태그를 쉼표로 구분하여 입력해주세요. 없으면 엔터를 클릭해주세요: ")
     transaction_tag = [tag.strip() for tag in raw_tag.split(",") if tag.strip()]
 
-    transaction = service.add_transaction_service(
-        date_text=date_text,
-        transaction_type=transaction_type,
-        category=category,
-        amount=amount,
-        memo=memo,
-        tags=transaction_tag
-    )
-
-    print(f"[저장 완료] id = {transaction.id}")
+    try:
+        transaction = service.add_transaction_service(
+            date_text=date_text,
+            transaction_type=transaction_type,
+            category=category,
+            amount=amount,
+            memo=memo,
+            tags=transaction_tag
+        )
+    except ValueError as error:
+        print(f"[입력 또는 데이터 오류] {error}")
+    except OSError as error:
+        print(f"[파일 처리 오류] {error}")
+    else:
+        print(f"[저장 완료] id = {transaction.id}")
 
 # 목록 조회
 def list_transactions(service: TransactionService, limit)-> None:
@@ -199,7 +207,7 @@ def search_transactions(
         tag: Optional[str] = None,
 ) -> None:
     try:
-        transactions = service.search_transactions_service(
+        transactions = service.search_transaction_service(
             date_from=date_from,
             date_to=date_to,
             category=category,
@@ -220,7 +228,7 @@ def search_transactions(
     except ValueError as error:
         print(f"[에러]: {error}")
 
-def summary_transaction(
+def summary_transactions(
         service: TransactionService,
         date_month: str,
         top_n: Optional[int] = None,
@@ -258,8 +266,24 @@ def summary_transaction(
             #     f"2) {result['top_categories'][1][0]} {result['top_categories'][1][1]}원\n"
             #     f"3) {result['top_categories'][2][0]} {result['top_categories'][2][1]}원\n"
             # )
+
     except ValueError as error:
         print(f"잘못된 입력입니다. {error}")
+
+
+def budget_transactions(
+        service: TransactionService,
+        date_month: str,
+        amount: int
+) -> None:
+    try:
+        service.budget_set(date_month=date_month, amount=amount)
+    except ValueError as error:
+        print(f"[입력 또는 데이터 오류]: {error}")
+    except OSError as error:
+        print(f"[파일 저장 오류]: {error}")
+    else:
+        print(f"[저장 완료] {date_month} 예산: {amount:,}원")
 
 def main():
     parser = build_parser()
@@ -280,9 +304,9 @@ def main():
     elif args.command == "search":
         search_transactions(service=service, date_from=args.date_from, date_to=args.date_to, category=args.category, search_type=args.type, memo=args.q, tag=args.tags)
     elif args.command == "summary":
-        summary_transaction(service=service, date_month=args.date_month, top_n=args.top_n)
+        summary_transactions(service=service, date_month=args.date_month, top_n=args.top_n)
     elif args.command == "budget":
         if args.budget_command == "set":
-            budget_set(date_month=args.date_month, amount=args.amount)
+            budget_transactions(service=service, date_month=args.date_month, amount=args.amount)
 
 
