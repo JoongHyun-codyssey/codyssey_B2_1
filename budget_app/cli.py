@@ -25,7 +25,7 @@ def build_parser():
     search_parser.add_argument("--category", type=str, help="카테고리")
     search_parser.add_argument("--type", type=str, help="income & expense")
     search_parser.add_argument("--q", type=str, help="메모")
-    search_parser.add_argument("--tag", type=str, help="태그 쉼표로 구분")
+    search_parser.add_argument("--tags", type=str, help="태그 쉼표로 구분")
 
     summary_parser = subparser.add_parser("summary", help="월별 요약 명령어")
     summary_parser.add_argument("--month", dest="date_month", type=str, help="YYYY-MM")
@@ -168,7 +168,7 @@ def update_transactions(
 
     print(f"[수정 완료] id = {args_id}")
 
-def delete_transaction(
+def delete_transactions(
     service: TransactionService,
     args_id: str
     ) -> None:
@@ -185,6 +185,36 @@ def delete_transaction(
     else:
         print(f"[삭제 완료] id = {args_id}")
 
+def search_transactions(
+        service: TransactionService,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        category: Optional[str] = None,
+        search_type: Optional[Literal["income", "expense"]] = None,
+        memo: Optional[str] = None,
+        tag: Optional[str] = None,
+):
+    try:
+        transactions = service.search_transactions_service(
+            date_from=date_from,
+            date_to=date_to,
+            category=category,
+            search_type=search_type,
+            memo=memo,
+            tag=tag
+        )
+
+        found = False
+
+        for transaction in transactions:
+            found = True
+            print(f"[검색 결과] {transaction['id']} | {transaction['date']} | {transaction['type']} | {transaction['category']} | {transaction['amount']} | {transaction['memo']} | {', '.join(transaction['tags'])}")
+
+        if not found:
+            print("검색 결과가 없습니다.")
+
+    except ValueError as error:
+        print(f"[에러]: {error}")
 
 def main():
     parser = build_parser()
@@ -200,9 +230,9 @@ def main():
     elif args.command == "update":
         update_transactions(service=service, args_id=args.id)
     elif args.command == "delete":
-        delete_transaction(service=service, args_id=args.id)
+        delete_transactions(service=service, args_id=args.id)
     elif args.command == "search":
-        search_transactions(date_from=args.date_from, date_to=args.date_to, category=args.category, search_type=args.type)
+        search_transactions(service=service, date_from=args.date_from, date_to=args.date_to, category=args.category, search_type=args.type, memo=args.q, tag=args.tags)
     elif args.command == "summary":
         summary(date_month=args.date_month)
     elif args.command == "budget":

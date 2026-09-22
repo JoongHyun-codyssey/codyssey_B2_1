@@ -1,7 +1,8 @@
+import heapq
 from uuid import uuid4
 from datetime import date
-
-from typing import Literal, Optional, Any
+from pathlib import Path
+from typing import Literal, Optional, Any, Iterator
 from .storage import TransactionRepository, CategoryRepository
 from .models import Transaction
 
@@ -37,7 +38,7 @@ class TransactionService:
     def list_transaction_service(self, limit:int)-> list[dict[str, Any]]:
         if limit <= 0:
             raise ValueError("조회 개수는 1개 이상이어야 합니다.")
-        return self.repository.list(limit=limit)
+        return self.repository.list_n(limit=limit)
 
     def update_transaction_service(self, id:str, field_name:str, new_value) -> None:
         if field_name == "date":
@@ -54,6 +55,88 @@ class TransactionService:
 
     def delete_transactions_service(self, id: str) -> None:
         self.repository.delete(transaction_id=id)
+
+    def search_transactions_service(
+            self,
+            date_from: Optional[str] = None,
+            date_to: Optional[str] = None,
+            category: Optional[str] = None,
+            search_type: Optional[Literal["income", "expense"]] = None,
+            memo: Optional[str] = None,
+            tag: Optional[str] = None,
+    )-> Iterator[dict[str, Any]]:
+        tmp = []
+        chunk_paths = []
+        temp_dir = Path("./data/tmp")
+
+        if date_from is not None:
+            self.validate_date(date_from)
+
+        if date_to is not None:
+            self.validate_date(date_to)
+
+        if date_from is not None and date_to is not None:
+            if date_from > date_to:
+                raise ValueError("시작일은 종료일보다 늦을 수 없습니다.")
+
+        if search_type is not None:
+            self.validate_type(search_type)
+
+        for transaction in self.repository.read_transaction():
+            if category is not None and transaction["category"] != category:
+                continue
+
+            if search_type is not None and transaction["type"] != search_type:
+                continue
+
+            if date_from is not None and transaction["date"] < date_from:
+                continue
+
+            if date_to is not None and transaction["date"] > date_to:
+                continue
+
+            if memo is not None and memo not in transaction["memo"]:
+                continue
+
+            if tag is not None and tag not in transaction["tags"]:
+                continue
+
+            tmp.append(transaction)
+
+            if len(tmp) >= 1000:
+                tmp.sort(key=lambda tx:tx["date"], reverse=True)
+                temp_path = temp_dir / f"chunk_{len(chunk_paths)}.jsonl"
+
+                self.repository.write_chunk(tmp, temp_path)
+
+                chunk_paths.append(temp_path)
+                tmp.clear()
+
+        if tmp:
+            tmp.sort(key=lambda tx: tx["date"], reverse=True)
+
+            temp_path = temp_dir / f"chunk_{len(chunk_paths)}.jsonl"
+            self.repository.write_chunk(tmp, temp_path)
+
+            chunk_paths.append(temp_path)
+            tmp.clear()
+
+        try:
+            streams = [
+                self.repository.read_jsonl(path)
+                for path in chunk_paths
+            ]
+
+            yield from heapq.merge(
+                *streams,
+                key=lambda _transaction: _transaction["date"],
+                reverse=True
+            )
+        finally:
+            for path in chunk_paths:
+                path.unlink()
+
+            temp_dir.rmdir()
 
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
@@ -83,16 +166,6 @@ class TransactionService:
             raise ValueError("날짜는 YYYY-MM-DD 형식으로 입력해 주세요.")
 
         return date_text
-
-def search_transactions(
-        date_from: Optional[str] = None,
-        date_to: Optional[str] = None,
-        category: Optional[str] = None,
-        search_type: Optional[Literal["income", "expense"]] = None,
-        memo: Optional[str] = None,
-        tag: Optional[str] = None,
-):
-    print(f"search + {date_from} + {date_to} + {category} + {search_type} + {memo} + {tag}")
 
 def summary(date_month:str):
     print(f"summary + {date_month}")

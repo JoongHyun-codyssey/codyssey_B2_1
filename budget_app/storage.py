@@ -13,6 +13,17 @@ class TransactionRepository:
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
         self.file_path.touch(exist_ok=True)
 
+    def read_jsonl(self, file_path: Path) -> Iterator[dict[str, Any]]:
+        with file_path.open("r", encoding="utf-8") as file:
+            for line in file:
+                if not line.strip():
+                    continue
+
+                yield json.loads(line)
+
+    def read_transaction(self) -> Iterator[dict[str, Any]]:
+        yield from self.read_jsonl(self.file_path)
+
     def save(self, transaction: Transaction) -> None:
         transaction_data = asdict(transaction)
 
@@ -21,15 +32,8 @@ class TransactionRepository:
         with self.file_path.open("a", encoding="utf-8") as file:
             file.write(json_line + "\n")
 
-    def read_transaction(self)-> Iterator[dict[str, Any]]:
-        with self.file_path.open("r", encoding="utf-8") as file:
-            for line in file:
-                if not line.strip():
-                    continue
-
-                yield json.loads(line)
-
-    def list(self, limit: int = 5) -> list[dict[str, Any]]:
+    # 최신 N개용 정렬 메서드
+    def list_n(self, limit: int = 5) -> list[dict[str, Any]]:
         return heapq.nlargest(
             limit,
             self.read_transaction(),
@@ -102,6 +106,20 @@ class TransactionRepository:
             # 실패했을 때 남은 임시 파일 정리
             if temp_path.exists():
                 temp_path.unlink()
+
+
+    def write_chunk(
+        self,
+        transactions: list[dict[str, Any]],
+        temp_path: Path,
+        ) -> None:
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with temp_path.open("w", encoding="utf-8") as file:
+            for transaction in transactions:
+                file.write(
+                    json.dumps(transaction, ensure_ascii=False) + "\n"
+                )
 
 
 
