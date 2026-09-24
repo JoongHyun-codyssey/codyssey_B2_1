@@ -170,6 +170,36 @@ class CategoryRepository:
                 category = json.loads(line)
                 yield category["name"]
 
+    def remove_category(self, category_name: str) -> None:
+        temp_path = self.file_path.with_suffix(".tmp")
+        found = False
+
+        try:
+            with self.file_path.open("r", encoding="utf-8") as source, \
+                    temp_path.open("w", encoding="utf-8") as target:
+
+                for line in source:
+                    if not line.strip():
+                        continue
+
+                    category = json.loads(line)
+
+                    if category["name"] == category_name:
+                        found = True
+                        continue
+
+                    target.write(
+                        json.dumps(category, ensure_ascii=False) + "\n"
+                    )
+
+            if not found:
+                raise ValueError("등록되지 않은 카테고리입니다.")
+
+            temp_path.replace(self.file_path)
+
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
 
     def exists(self, category: str) -> bool:
         with self.file_path.open("r", encoding="utf-8") as file:

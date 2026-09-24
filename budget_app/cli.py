@@ -323,8 +323,17 @@ def category_list(service: TransactionService):
     except OSError as error:
         print(f"[파일 읽기 오류] {error}")
 
-def category_remove(service: TransactionService):
-    print(1)
+def category_remove(service: TransactionService) -> None:
+    category_name = input("삭제할 카테고리명: ").strip()
+
+    try:
+        service.category_remove(category_name)
+    except ValueError as error:
+        print(f"[에러] {error}")
+    except OSError as error:
+        print(f"[파일 처리 오류] {error}")
+    else:
+        print(f"[삭제 완료] {category_name}")
 
 def main():
     parser = build_parser()

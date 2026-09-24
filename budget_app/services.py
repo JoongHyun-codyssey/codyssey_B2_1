@@ -233,6 +233,20 @@ class TransactionService:
     def category_list(self) -> Iterator[str]:
         return self.category_repository.read_categories()
 
+    def category_remove(self, category_name:str) -> None:
+        if not category_name:
+            raise ValueError("카테고리 이름을 입력해주세요.")
+
+        if not self.category_repository.exists(category_name):
+            raise ValueError("등록되지 않은 카테고리입니다.")
+
+        # self.repository는 생성자에서 받은 TransactionRepository 객체
+        for transaction in self.repository.read_transaction():
+            if transaction["category"] == category_name:
+                raise ValueError("거래에서 사용 중인 카테고리는 삭제할 수 없습니다.")
+
+        self.category_repository.remove_category(category_name)
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":
