@@ -2,9 +2,37 @@ import json
 import heapq
 from dataclasses import asdict
 from pathlib import Path
-from typing import Iterator, Any, Optional
+from typing import Iterator, Any, Optional, Generator
 
 from .models import Transaction
+
+def read_jsonl(file_path: Path) -> Generator[dict[str, Any], None, None]:
+    with file_path.open("r", encoding="utf-8") as file:
+        for line in file:
+            if not line.strip():
+                continue
+
+            yield json.loads(line)
+
+def atomic_write_jsonl(
+    file_path: Path,
+    records: Iterator[dict[str, Any]],
+) -> None:
+    temp_path = file_path.with_suffix(".tmp")
+
+    try:
+        with temp_path.open("w", encoding="utf-8") as target:
+            for record in records:
+                target.write(
+                    json.dumps(record, ensure_ascii=False) + "\n"
+                )
+
+        # 쓰기가 끝나고 파일이 닫힌 뒤 교체
+        temp_path.replace(file_path)
+
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
 
 class TransactionRepository:
@@ -13,24 +41,15 @@ class TransactionRepository:
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
         self.file_path.touch(exist_ok=True)
 
-    def read_jsonl(self, file_path: Path) -> Iterator[dict[str, Any]]:
-        with file_path.open("r", encoding="utf-8") as file:
-            for line in file:
-                if not line.strip():
-                    continue
-
-                yield json.loads(line)
-
     def read_transaction(self) -> Iterator[dict[str, Any]]:
-        yield from self.read_jsonl(self.file_path)
+        yield from read_jsonl(self.file_path)
 
     def save(self, transaction: Transaction) -> None:
-        transaction_data = asdict(transaction)
+        def added_records() -> Iterator[dict[str, Any]]:
+            yield from read_jsonl(self.file_path)
+            yield asdict(transaction)
 
-        json_line = json.dumps(transaction_data, ensure_ascii=False)
-
-        with self.file_path.open("a", encoding="utf-8") as file:
-            file.write(json_line + "\n")
+        atomic_write_jsonl(self.file_path, added_records())
 
     # 최신 N개용 정렬 메서드
     def list_n(self, limit: int = 5) -> list[dict[str, Any]]:
@@ -41,71 +60,42 @@ class TransactionRepository:
         )
 
     def update(self, transaction_id: str, field_name : str, new_value) -> None:
-        temp_path = self.file_path.with_suffix(".tmp")
-        found = False
+        def update_records() -> Iterator[dict[str, Any]]:
+            found = False
 
-        try:
-            with (
-                self.file_path.open("r", encoding="utf-8") as source,
-                temp_path.open("w", encoding="utf-8") as target,
-            ):
-                for line in source:
-                    if not line.strip():
-                        continue
+            for transaction in read_jsonl(self.file_path):
+                if transaction["id"] ==  transaction_id:
+                    transaction[field_name] = new_value
+                    found = True
 
-                    transaction = json.loads(line)
-
-                    if transaction["id"] == transaction_id:
-                        transaction[field_name] = new_value
-                        found = True
-
-                    target.write(
-                        json.dumps(transaction, ensure_ascii=False) + "\n"
-                    )
+                yield  transaction
 
             if not found:
                 raise ValueError("해당 ID의 거래가 없습니다.")
 
-            # 임시 -> 원본 교체
-            temp_path.replace(self.file_path)
-
-        finally:
-            # 실패했을 때 남은 임시 파일 정리
-            if temp_path.exists():
-                temp_path.unlink()
+        atomic_write_jsonl(
+            self.file_path,
+            update_records()
+        )
 
     def delete(self, transaction_id : str) -> None:
-        temp_path = self.file_path.with_suffix(".tmp")
-        found = False
+        def delete_records() -> Iterator[dict[str, Any]]:
+            found = False
 
-        try:
-            with (
-                self.file_path.open("r", encoding="utf-8") as source,
-                temp_path.open("w", encoding="utf-8") as target,
-            ):
-                for line in source:
-                    if not line.strip():
-                        continue
+            for transaction in read_jsonl(self.file_path):
+                if transaction["id"] == transaction_id:
+                    found = True
+                    continue
 
-                    transaction = json.loads(line)
-
-                    # 삭제 대상은 임시 파일 작성x
-                    if transaction["id"] == transaction_id:
-                        found = True
-                        continue
-
-                    target.write(line)
+                yield transaction
 
             if not found:
                 raise ValueError("해당 ID의 거래가 없습니다.")
 
-            # 임시 -> 원본 교체
-            temp_path.replace(self.file_path)
-
-        finally:
-            # 실패했을 때 남은 임시 파일 정리
-            if temp_path.exists():
-                temp_path.unlink()
+        atomic_write_jsonl(
+            self.file_path,
+            delete_records()
+        )
 
 
     def write_chunk(
@@ -132,85 +122,36 @@ class CategoryRepository:
         if self.exists(category_name):
             raise ValueError("이미 존재하는 카테고리입니다.")
 
-        temp_path = self.file_path.with_suffix(".tmp")
+        def add_records() -> Iterator[dict[str, Any]]:
+            yield from read_jsonl(self.file_path)
+            yield {"name": category_name}
 
-        try:
-            with self.file_path.open("r", encoding="utf-8") as source, \
-                temp_path.open("w", encoding="utf-8") as target:
-
-                for line in source:
-                    if not line.strip():
-                        continue
-
-                    category = json.loads(line)
-
-                    target.write(
-                        json.dumps(category, ensure_ascii=False) + "\n"
-                    )
-
-                target.write(
-                    json.dumps(
-                        {"name": category_name},
-                        ensure_ascii=False,
-                    ) + "\n"
-                )
-
-            temp_path.replace(self.file_path)
-
-        finally:
-            if temp_path.exists():
-                temp_path.unlink()
+        atomic_write_jsonl(self.file_path, add_records())
 
     def read_categories(self) -> Iterator[str]:
-        with self.file_path.open("r", encoding="utf-8") as file:
-            for line in file:
-                if not line.strip():
-                    continue
-
-                category = json.loads(line)
-                yield category["name"]
+        for category in read_jsonl(self.file_path):
+            yield category["name"]
 
     def remove_category(self, category_name: str) -> None:
-        temp_path = self.file_path.with_suffix(".tmp")
-        found = False
+        def remaining_records() -> Iterator[dict[str, Any]]:
+            found = False
 
-        try:
-            with self.file_path.open("r", encoding="utf-8") as source, \
-                    temp_path.open("w", encoding="utf-8") as target:
+            for category in read_jsonl(self.file_path):
+                if category["name"] == category_name:
+                    found = True
+                    continue
 
-                for line in source:
-                    if not line.strip():
-                        continue
-
-                    category = json.loads(line)
-
-                    if category["name"] == category_name:
-                        found = True
-                        continue
-
-                    target.write(
-                        json.dumps(category, ensure_ascii=False) + "\n"
-                    )
+                yield category
 
             if not found:
                 raise ValueError("등록되지 않은 카테고리입니다.")
 
-            temp_path.replace(self.file_path)
-
-        finally:
-            if temp_path.exists():
-                temp_path.unlink()
+        atomic_write_jsonl(self.file_path, remaining_records())
 
     def exists(self, category: str) -> bool:
-        with self.file_path.open("r", encoding="utf-8") as file:
-            for line in file:
-                if not line.strip():
-                    continue
-
-                data = json.loads(line)
-
-                if data["name"] == category:
-                    return True
+        for data in read_jsonl(self.file_path):
+            if data["name"] == category:
+                return True
 
         return False
 
@@ -221,50 +162,24 @@ class BudgetRepository:
         self.file_path.touch(exist_ok=True)
 
     def set_amount(self, month: str, amount: int) -> None:
-        temp_path = self.file_path.with_suffix(".tmp")
-        found = False
+        def budget_records() -> Iterator[dict[str, Any]]:
+            found = False
 
-        try:
-            with self.file_path.open("r", encoding="utf-8") as source, \
-                temp_path.open("w", encoding="utf-8") as target:
+            for budget in read_jsonl(self.file_path):
+                if budget["month"] == month:
+                    budget["amount"] = amount
+                    found = True
 
-                for line in source:
-                    if not line.strip():
-                        continue
+                yield budget
 
-                    budget = json.loads(line)
+            if not found:
+                yield {"month": month, "amount": amount}
 
-                    if budget["month"] == month:
-                        budget["amount"] = amount
-                        found = True
-
-                    target.write(
-                        json.dumps(budget, ensure_ascii=False) + "\n"
-                    )
-
-                if not found:
-                    target.write(
-                        json.dumps(
-                            {"month": month, "amount": amount},
-                            ensure_ascii=False,
-                        ) + "\n"
-                    )
-
-                temp_path.replace(self.file_path)
-
-        finally:
-            if temp_path.exists():
-                temp_path.unlink()
+        atomic_write_jsonl(self.file_path, budget_records())
 
     def get_amount(self, month: str) -> Optional[int]:
-        with self.file_path.open("r", encoding="utf-8") as file:
-            for line in file:
-                if not line.strip():
-                    continue
-
-                budget = json.loads(line)
-
-                if budget["month"] == month:
-                    return budget["amount"]
+        for budget in read_jsonl(self.file_path):
+            if budget["month"] == month:
+                return budget["amount"]
 
         return None

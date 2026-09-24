@@ -3,7 +3,7 @@ from uuid import uuid4
 from datetime import date
 from pathlib import Path
 from typing import Literal, Optional, Any, Iterator
-from .storage import TransactionRepository, CategoryRepository, BudgetRepository
+from .storage import TransactionRepository, CategoryRepository, BudgetRepository, read_jsonl
 from .models import Transaction
 
 space = "\n"
@@ -126,11 +126,10 @@ class TransactionService:
             chunk_paths.append(temp_path)
             tmp.clear()
 
+        streams = []
+
         try:
-            streams = [
-                self.repository.read_jsonl(path)
-                for path in chunk_paths
-            ]
+            streams = [read_jsonl(path) for path in chunk_paths]
 
             yield from heapq.merge(
                 *streams,
@@ -138,10 +137,14 @@ class TransactionService:
                 reverse=True
             )
         finally:
-            for path in chunk_paths:
-                path.unlink()
+            for stream in streams:
+                stream.close()
 
-            temp_dir.rmdir()
+            for path in chunk_paths:
+                path.unlink(missing_ok=True)
+
+            if temp_dir.exists():
+                temp_dir.rmdir()
 
     def summary_transaction_service(
             self,
