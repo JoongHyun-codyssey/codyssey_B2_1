@@ -307,7 +307,21 @@ def category_add(service:TransactionService) -> None:
             break
 
 def category_list(service: TransactionService):
-    print(1)
+    try:
+        categories = service.category_list()
+        found = False
+
+        for name in categories:
+            found = True
+            print(f"- {name}")
+
+        if not found:
+            print("등록된 카테고리가 없습니다.")
+
+    except ValueError as error:
+        print(f"[데이터 오류] {error}")
+    except OSError as error:
+        print(f"[파일 읽기 오류] {error}")
 
 def category_remove(service: TransactionService):
     print(1)

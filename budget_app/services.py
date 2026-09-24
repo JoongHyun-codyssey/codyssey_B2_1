@@ -230,6 +230,9 @@ class TransactionService:
 
         self.category_repository.add_category(category_name)
 
+    def category_list(self) -> Iterator[str]:
+        return self.category_repository.read_categories()
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":

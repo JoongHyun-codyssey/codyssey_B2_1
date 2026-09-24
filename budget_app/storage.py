@@ -161,6 +161,16 @@ class CategoryRepository:
             if temp_path.exists():
                 temp_path.unlink()
 
+    def read_categories(self) -> Iterator[str]:
+        with self.file_path.open("r", encoding="utf-8") as file:
+            for line in file:
+                if not line.strip():
+                    continue
+
+                category = json.loads(line)
+                yield category["name"]
+
+
     def exists(self, category: str) -> bool:
         with self.file_path.open("r", encoding="utf-8") as file:
             for line in file:
