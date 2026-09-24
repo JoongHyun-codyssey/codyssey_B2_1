@@ -125,6 +125,41 @@ class TransactionRepository:
 class CategoryRepository:
     def __init__(self, data_dir: str = "./data"):
         self.file_path = Path(data_dir) / "categories.jsonl"
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        self.file_path.touch(exist_ok=True)
+
+    def add_category(self, category_name : str) -> None:
+        if self.exists(category_name):
+            raise ValueError("이미 존재하는 카테고리입니다.")
+
+        temp_path = self.file_path.with_suffix(".tmp")
+
+        try:
+            with self.file_path.open("r", encoding="utf-8") as source, \
+                temp_path.open("w", encoding="utf-8") as target:
+
+                for line in source:
+                    if not line.strip():
+                        continue
+
+                    category = json.loads(line)
+
+                    target.write(
+                        json.dumps(category, ensure_ascii=False) + "\n"
+                    )
+
+                target.write(
+                    json.dumps(
+                        {"name": category_name},
+                        ensure_ascii=False,
+                    ) + "\n"
+                )
+
+            temp_path.replace(self.file_path)
+
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
 
     def exists(self, category: str) -> bool:
         with self.file_path.open("r", encoding="utf-8") as file:

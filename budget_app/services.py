@@ -222,6 +222,14 @@ class TransactionService:
 
         self.budget_repository.set_amount(month=date_month, amount=amount)
 
+    def category_set(self, category_name : str) -> None:
+        category_name = category_name.strip()
+
+        if not category_name:
+            raise ValueError("카테고리 이름을 입력해주세요.")
+
+        self.category_repository.add_category(category_name)
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":

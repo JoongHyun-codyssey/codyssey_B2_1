@@ -32,9 +32,15 @@ def build_parser() -> ArgumentParser:
     summary_parser.add_argument("--top", dest="top_n", type=int, help="카테고리별 지출 상위 N개 (기본값: 3)",)
 
     budget_parser = subparser.add_parser("budget", help="예산 명령어")
-
     budget_subparser = budget_parser.add_subparsers(dest="budget_command", required=True)
     budget_set_parser = budget_subparser.add_parser("set", help="예산 설정")
+
+    category_parser = subparser.add_parser("category", help="카테고리 추가/수정/삭제 명령어")
+    category_subparser = category_parser.add_subparsers(dest="category_command", required=True)
+    category_add_parser = category_subparser.add_parser("add", help="카테고리 추가")
+    category_list_parser = category_subparser.add_parser("list", help="카테고리 리스트")
+    category_remove_parser = category_subparser.add_parser("remove", help="카테고리 삭제")
+
 
     budget_set_parser.add_argument(
         "--month",
@@ -285,6 +291,27 @@ def budget_transactions(
     else:
         print(f"[저장 완료] {date_month} 예산: {amount:,}원")
 
+def category_add(service:TransactionService) -> None:
+    while True:
+        category_name = input("카테고리명: ")
+
+        try:
+            service.category_set(category_name=category_name)
+        except ValueError as error:
+            print(f"[에러] {error}")
+        except OSError as error:
+            print(f"[파일 처리 오류] {error}")
+            return
+        else:
+            print(f"[추가 완료] category={category_name.strip()}")
+            break
+
+def category_list(service: TransactionService):
+    print(1)
+
+def category_remove(service: TransactionService):
+    print(1)
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -308,5 +335,12 @@ def main():
     elif args.command == "budget":
         if args.budget_command == "set":
             budget_transactions(service=service, date_month=args.date_month, amount=args.amount)
+    elif args.command == "category":
+        if args.category_command == "add":
+            category_add(service=service)
+        elif args.category_command == "list":
+            category_list(service=service)
+        elif args.category_command == "remove":
+            category_remove(service=service)
 
 
