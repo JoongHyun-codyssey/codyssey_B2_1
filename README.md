@@ -23,7 +23,7 @@ Python으로 구현하는 파일 입출력 기반 나만의 용돈 기입장입�
 - [x] 예산 설정·조회: 월별 예산 저장 및 사용률·초과 경고
 - [x] 카테고리 관리: 추가·목록·삭제 및 사용 중인 카테고리 삭제 방지
 - [x] CSV 가져오기·내보내기: 일괄 등록 및 조건별 내보내기
-- [ ] 입력 검증, 예외 처리, 실행 로그, 실행 시간 측정
+- [x] 입력 검증, 예외 처리, 실행 로그, 실행 시간 1개 이상 구현 및 적용
 
 ## 3. 프로젝트 구조
 
@@ -38,7 +38,9 @@ budget-project/
 ├── data/
 │   ├── transactions.jsonl
 │   ├── categories.jsonl
-│   └── budgets.jsonl
+│   ├── budgets.jsonl
+│   ├── export.csv
+│   └── import.csv
 ├── README.md
 └── .gitignore
 ```
