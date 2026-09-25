@@ -1,3 +1,4 @@
+import csv
 import json
 import heapq
 from dataclasses import asdict
@@ -97,6 +98,37 @@ class TransactionRepository:
             delete_records()
         )
 
+    def export_csv(self,
+                   output_path: Path,
+                   transactions: Iterator[dict[str, Any]]) -> int:
+        count = 0
+        temp_path = output_path.with_suffix(".tmp")
+
+        print("export_csv 호출됨")
+        print("저장 위치:", output_path.resolve())
+
+        try:
+            with temp_path.open("w", encoding="utf-8", newline="") as file:
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=["id", "type", "date", "amount", "category", "memo", "tags"],
+                )
+                writer.writeheader()
+
+                for transaction in transactions:
+                    row = transaction.copy()
+                    row["tags"] = ", ".join(transaction["tags"])
+
+                    writer.writerow(row)
+                    count += 1
+
+            temp_path.replace(output_path)
+
+            return count
+
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
 
     def write_chunk(
         self,

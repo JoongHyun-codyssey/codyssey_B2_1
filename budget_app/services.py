@@ -2,7 +2,7 @@ import heapq
 from uuid import uuid4
 from datetime import date
 from pathlib import Path
-from typing import Literal, Optional, Any, Iterator
+from typing import Literal, Optional, Any, Iterator, Generator
 from .storage import TransactionRepository, CategoryRepository, BudgetRepository, read_jsonl
 from .models import Transaction
 
@@ -69,7 +69,7 @@ class TransactionService:
             search_type: Optional[Literal["income", "expense"]] = None,
             memo: Optional[str] = None,
             tag: Optional[str] = None,
-    )-> Iterator[dict[str, Any]]:
+    )-> Generator[dict[str, Any], None, None]:
         tmp = []
         chunk_paths = []
         temp_dir = Path("./data/tmp")
@@ -249,6 +249,52 @@ class TransactionService:
                 raise ValueError("거래에서 사용 중인 카테고리는 삭제할 수 없습니다.")
 
         self.category_repository.remove_category(category_name)
+
+    def export_transaction_service(self,
+                                   out_path: str,
+                                   date_month: Optional[str] = None,
+                                   date_from: Optional[str] = None,
+                                   date_to: Optional[str] = None,
+                                   ) -> int :
+        if not out_path.strip():
+            raise ValueError("출력 파일 경로를 입력해 주세요.")
+
+        output_path = self.repository.file_path.parent / out_path
+
+        if output_path.suffix.lower() != ".csv":
+            raise ValueError("출력 파일은 .csv 확장자여야 합니다.")
+
+        if output_path.is_dir():
+            raise ValueError("파일 경로를 입력해 주세요.")
+
+        if not output_path.parent.is_dir():
+            raise ValueError("저장할 폴더가 존재하지 않습니다.")
+
+        if date_month is None and (date_from is None or date_to is None):
+            raise ValueError(
+                "--month 또는 --from과 --to를 함께 입력해야 합니다."
+            )
+
+        def filtered_transaction() -> Iterator[dict[str, Any]]:
+            transactions = self.search_transaction_service(
+                date_from=date_from,
+                date_to=date_to,
+            )
+
+            try:
+                for transaction in transactions:
+                    if date_month is not None:
+                        if transaction["date"][:7] != date_month:
+                            continue
+
+                    yield transaction
+            finally:
+                transactions.close()
+
+        return self.repository.export_csv(
+            output_path=output_path,
+            transactions=filtered_transaction()
+        )
 
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:

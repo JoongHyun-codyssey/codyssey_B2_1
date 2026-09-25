@@ -41,6 +41,16 @@ def build_parser() -> ArgumentParser:
     category_list_parser = category_subparser.add_parser("list", help="카테고리 리스트")
     category_remove_parser = category_subparser.add_parser("remove", help="카테고리 삭제")
 
+    export_parser = subparser.add_parser("export", help="CSV 내보내기 명령어")
+    export_parser.add_argument("--out", dest="export_out", required=True, type=str, help="[file name].csv")
+    export_parser.add_argument("--month", dest="export_month", type=str, help="export month: YYYY-MM")
+    export_parser.add_argument("--from", dest="export_month_from", type=str, help="export month_from: YYYY-MM-DD")
+    export_parser.add_argument("--to", dest="export_month_to", type=str, help="export month_to: YYYY-MM-DD")
+
+
+
+    import_parser = subparser.add_parser("import", help="CSV 가져오기 명령어")
+    import_parser.add_argument("--from", dest="import_from", type=str, help="[file name].csv")
 
     budget_set_parser.add_argument(
         "--month",
@@ -335,6 +345,28 @@ def category_remove(service: TransactionService) -> None:
     else:
         print(f"[삭제 완료] {category_name}")
 
+def export_data(
+        service: TransactionService,
+        out_path: str,
+        date_month: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+) -> None:
+    try:
+        count = service.export_transaction_service(
+            out_path=out_path,
+            date_month=date_month,
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except ValueError as error:
+        print(f"[입력 또는 데이터 오류] {error}")
+    except OSError as error:
+        print(f"[파일 저장 오류] {error}")
+    else:
+        print(f"[내보내기 완료] {count}건 → {out_path}")
+
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -365,5 +397,7 @@ def main():
             category_list(service=service)
         elif args.category_command == "remove":
             category_remove(service=service)
+    elif args.command == "export":
+        export_data(service=service, out_path=args.export_out, date_month=args.export_month, date_from=args.export_month_from, date_to=args.export_month_to)
 
 
