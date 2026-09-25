@@ -1,8 +1,7 @@
 from argparse import ArgumentParser
-from typing import Literal
 import argparse
-from .storage import TransactionRepository, CategoryRepository
 from .services import *
+from .decorators import measure_time
 
 def build_parser() -> ArgumentParser:
     parser = argparse.ArgumentParser(description="argument 설명")
@@ -382,7 +381,7 @@ def import_data(
         print(f"[가져오기 완료] 저장 {imported_count}건 / "
         f"중복 건너뜀 {skipped_count}건")
 
-
+@measure_time
 def main():
     parser = build_parser()
     args = parser.parse_args()
