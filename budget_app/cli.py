@@ -366,6 +366,22 @@ def export_data(
     else:
         print(f"[내보내기 완료] {count}건 → {out_path}")
 
+def import_data(
+        service: TransactionService,
+        import_from: str,
+)-> None:
+    try:
+        imported_count, skipped_count = service.import_transaction_service(
+            input_path=import_from
+        )
+    except ValueError as error:
+        print(f"[입력 또는 데이터 오류] {error}")
+    except OSError as error:
+        print(f"[파일 저장 오류] {error}")
+    else:
+        print(f"[가져오기 완료] 저장 {imported_count}건 / "
+        f"중복 건너뜀 {skipped_count}건")
+
 
 def main():
     parser = build_parser()
@@ -399,5 +415,7 @@ def main():
             category_remove(service=service)
     elif args.command == "export":
         export_data(service=service, out_path=args.export_out, date_month=args.export_month, date_from=args.export_month_from, date_to=args.export_month_to)
+    elif args.command == "import":
+        import_data(service=service, import_from=args.import_from)
 
 

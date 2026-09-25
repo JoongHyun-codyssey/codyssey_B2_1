@@ -130,6 +130,57 @@ class TransactionRepository:
             if temp_path.exists():
                 temp_path.unlink()
 
+    def read_csv(self, input_path = Path) -> Iterator[dict[str, str]]:
+        required_fields = {
+            "id", "type", "date", "amount", "category", "memo", "tags"
+        }
+
+        with input_path.open("r", encoding="utf-8-sig", newline="") as file:
+            reader = csv.DictReader(file)
+
+            if reader.fieldnames is None:
+                raise ValueError("CSV 헤더가 없습니다.")
+
+            if not required_fields.issubset(reader.fieldnames):
+                raise ValueError("CSV에 필수 컬럼이 누락되어 있습니다.")
+
+            for row in reader:
+                if None in row:
+                    raise ValueError(
+                        f"CSV {reader.line_num}줄: 컬럼보다 값이 많습니다."
+                    )
+
+                if any(value is None for value in row.values()):
+                    raise ValueError(
+                        f"CSV {reader.line_num}줄: 값이 누락된 컬럼이 있습니다."
+                    )
+
+                yield row
+
+    def import_transactions(
+            self,
+            transactions: Iterator[dict[str, Any]],
+    ) -> int:
+        count = 0
+
+        def combined_records() -> Iterator[dict[str, Any]]:
+            nonlocal count
+
+            # 기존 거래 유지
+            yield from read_jsonl(self.file_path)
+
+            # 서비스에서 검증하며 전달하는 새 거래 추가
+            for transaction in transactions:
+                yield transaction
+                count += 1
+
+        atomic_write_jsonl(
+            self.file_path,
+            combined_records(),
+        )
+
+        return count
+
     def write_chunk(
         self,
         transactions: list[dict[str, Any]],

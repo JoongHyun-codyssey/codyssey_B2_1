@@ -296,6 +296,75 @@ class TransactionService:
             transactions=filtered_transaction()
         )
 
+    def import_transaction_service(self, input_path: str) -> tuple[int, int]:
+        skipped_count = 0
+
+        if not input_path.strip():
+            raise ValueError("가져올 파일 경로를 입력해 주세요.")
+
+        csv_path = self.repository.file_path.parent / input_path
+
+        if csv_path.suffix.lower() != ".csv":
+            raise ValueError("CSV 파일만 가져올 수 있습니다.")
+
+        if not csv_path.is_file():
+            raise ValueError("가져올 파일이 존재하지 않거나 파일이 아닙니다.")
+
+        def validated_transactions() -> Iterator[dict[str, Any]]:
+            nonlocal skipped_count
+
+            # 기존 거래와 CSV 내부의 ID 중복 확인용
+            seen_ids = {
+                transaction["id"]
+                for transaction in self.repository.read_transaction()
+            }
+
+            for row in self.repository.read_csv(csv_path):
+                transaction_id = row["id"].strip()
+
+                if not transaction_id:
+                    raise ValueError("거래 ID가 비어 있습니다.")
+
+                if transaction_id in seen_ids:
+                    skipped_count += 1
+                    continue
+
+                date_text = self.validate_date(row["date"])
+                transaction_type = self.validate_type(row["type"])
+                self.validate_category(row["category"])
+
+                try:
+                    amount = int(row["amount"])
+                except ValueError:
+                    raise ValueError("금액은 정수여야 합니다.") from None
+
+                if amount <= 0:
+                    raise ValueError("금액은 0보다 커야 합니다.")
+
+                transaction: dict[str, Any] = {
+                    "id": transaction_id,
+                    "date": date_text,
+                    "type": transaction_type,
+                    "category": row["category"],
+                    "amount": amount,
+                    "memo": row["memo"],
+                    "tags": [
+                        tag.strip()
+                        for tag in row["tags"].split(",")
+                        if tag.strip()
+                    ],
+                }
+
+                seen_ids.add(transaction_id)
+                yield transaction
+
+        imported_count = self.repository.import_transactions(
+            transactions=validated_transactions()
+        )
+
+        return imported_count, skipped_count
+
+
     @staticmethod
     def validate_type(transaction_type: str) -> Literal["income", "expense"]:
         if transaction_type == "income":
