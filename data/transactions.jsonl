@@ -6,11 +6,12 @@
 {"id": "8c4d91a2-3f67-4b80-a125-7d09e6c348bf", "date": "2026-09-21", "type": "expense", "category": "food", "amount": 4500, "memo": "아이스 아메리카노", "tags": ["카페"]}
 {"id": "a93c740e-5d16-4b29-a860-2f71c508ed34", "date": "2026-09-18", "type": "expense", "category": "food", "amount": 6500, "memo": "샌드위치", "tags": ["아침"]}
 {"id": "09d37ca5-6e81-42f9-ab04-58c1627ed390", "date": "2026-08-31", "type": "expense", "category": "food", "amount": 23000, "memo": "주말 저녁 식사", "tags": ["저녁", "외식"]}
-{"id": "45e8b019-7a62-4c35-bd91-903f6e2a784c", "date": "2026-09-17", "type": "expense", "category": "food", "amount": 12000, "memo": "", "tags": []}
 {"id": "8689dba3-ea55-4928-8d65-faadf0062524", "date": "2026-03-05", "type": "income", "category": "food", "amount": 50000, "memo": "점심", "tags": []}
 {"id": "10b06594-2eaf-4c52-bd42-b68a866f8781", "date": "2026-03-04", "type": "income", "category": "can", "amount": 20000, "memo": "", "tags": []}
 {"id": "b57ed718-375e-4199-94c9-81506857d521", "date": "2026-09-22", "type": "expense", "category": "food", "amount": 12000, "memo": "점심 식사", "tags": ["점심", "외식"]}
-{"id": "ae341921-5439-483d-8ba1-e5012309d652", "date": "2026-09-23", "type": "expense", "category": "transport", "amount": 1500, "memo": "버스 이용", "tags": ["출근"]}
+{"id": "ae341921-5439-483d-8ba1-e5012309d652", "date": "2026-09-23", "type": "expense", "category": "can", "amount": 50000, "memo": "버스 이용", "tags": ["출근"]}
 {"id": "c953d180-2465-441a-92d8-370ac564e783", "date": "2026-09-24", "type": "expense", "category": "veggies", "amount": 18000, "memo": "채소 구매", "tags": ["장보기", "식단"]}
 {"id": "d21b6894-7132-457c-a093-862fa945b814", "date": "2026-09-24", "type": "income", "category": "food", "amount": 5000, "memo": "주문 취소 환불", "tags": ["환불"]}
 {"id": "e604a753-8021-498b-b174-926cd385a945", "date": "2026-09-25", "type": "expense", "category": "food", "amount": 4500, "memo": "", "tags": []}
+{"id": "c5f7cb8e-4247-4b8d-810a-bb5218d27fe9", "date": "2026-12-02", "type": "income", "category": "can", "amount": 20000, "memo": "test", "tags": ["test1", "test2"]}
+{"id": "b2aa8cb0-133d-4c5c-9097-fed2caad4add", "date": "2026-09-02", "type": "expense", "category": "transport", "amount": 400000, "memo": "", "tags": []}

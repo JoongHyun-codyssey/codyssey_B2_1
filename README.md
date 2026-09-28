@@ -49,12 +49,12 @@ budget-project/
 | --- | --- |
 | `__init__.py` | 패키지 초기화 파일. 초기에는 빈 파일로 유지 |
 | `__main__.py` | 실행 진입점, 명령어·옵션 해석, 대화형 입력 및 결과 출력 |
-| `models.py` | `Transaction` 등 데이터 클래스 정의 |
+| `models.py` | 데이터 클래스 정의 |
 | `storage.py` | 저장소 클래스, 파일 읽기·쓰기, 제너레이터, 안전한 파일 교체 |
 | `services.py` | 입력 검증, 거래·카테고리·예산 관리, 요약, CSV 처리 |
 | `data/` | 프로그램 종료 후에도 유지되는 데이터 저장 폴더 |
 
-최소 `Transaction`과 `TransactionRepository` 클래스를 사용합니다. 데코레이터는 우선 `services.py`에 정의하고, 여러 모듈에서 필요해지면 별도 파일로 분리할 예정입니다.
+최소 `Transaction`과 `TransactionRepository` 클래스를 사용합니다.
 
 ## 4. 실행 방법
 

@@ -180,7 +180,7 @@ class TransactionService:
         # 잔액
         balance = total_income - total_expense
 
-        # 지출 top 3
+        # 지출 top
         if top_n is not None:
             if top_n <= 1:
                 raise ValueError("TOP 개수는 1 이상이어야 합니다.")
@@ -223,7 +223,17 @@ class TransactionService:
         if type(amount) is not int or amount <= 0:
             raise ValueError("예산은 0보다 큰 정수여야 합니다.")
 
-        self.budget_repository.set_amount(month=date_month, amount=amount)
+        self.budget_repository.set_amount(month=month_text, amount=amount)
+
+    def budget_check_service(self, date_month: str) -> int:
+        month_text = self.validate_month(date_month)
+
+        budget_amount = self.budget_repository.get_amount(month=month_text)
+
+        if budget_amount is None:
+            budget_amount = 0
+        
+        return budget_amount
 
     def category_set(self, category_name : str) -> None:
         category_name = category_name.strip()

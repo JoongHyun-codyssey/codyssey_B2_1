@@ -31,8 +31,9 @@ def build_parser() -> ArgumentParser:
     summary_parser.add_argument("--top", dest="top_n", type=int, help="카테고리별 지출 상위 N개 (기본값: 3)",)
 
     budget_parser = subparser.add_parser("budget", help="예산 명령어")
-    budget_subparser = budget_parser.add_subparsers(dest="budget_command", required=True)
+    budget_subparser = budget_parser.add_subparsers(dest="budget_command")
     budget_set_parser = budget_subparser.add_parser("set", help="예산 설정")
+    budget_show_parser = budget_subparser.add_parser("show", help="예산 조회")
 
     category_parser = subparser.add_parser("category", help="카테고리 추가/수정/삭제 명령어")
     category_subparser = category_parser.add_subparsers(dest="category_command", required=True)
@@ -45,8 +46,6 @@ def build_parser() -> ArgumentParser:
     export_parser.add_argument("--month", dest="export_month", type=str, help="export month: YYYY-MM")
     export_parser.add_argument("--from", dest="export_month_from", type=str, help="export month_from: YYYY-MM-DD")
     export_parser.add_argument("--to", dest="export_month_to", type=str, help="export month_to: YYYY-MM-DD")
-
-
 
     import_parser = subparser.add_parser("import", help="CSV 가져오기 명령어")
     import_parser.add_argument("--from", dest="import_from", type=str, help="[file name].csv")
@@ -63,6 +62,14 @@ def build_parser() -> ArgumentParser:
         type=int,
         required=True,
         help="예산 금액",
+    )
+
+    budget_show_parser.add_argument(
+        "--month",
+        dest="date_month",
+        type=str,
+        required=True,
+        help="YYYY-MM",
     )
 
     return parser
@@ -205,7 +212,7 @@ def delete_transactions(
         return
 
     try:
-        service.delete_transactions_service(id=args_id)
+        service.delete_transaction_service(id=args_id)
     except ValueError as error:
         print(f"[에러]: {error}")
     else:
@@ -299,6 +306,19 @@ def budget_transactions(
         print(f"[파일 저장 오류]: {error}")
     else:
         print(f"[저장 완료] {date_month} 예산: {amount:,}원")
+
+def budget_check(
+        service: TransactionService,
+        date_month : str
+) -> None:
+    try:
+        result = service.budget_check_service(date_month=date_month)
+    except ValueError as error:
+        print(f"[입력 또는 데이터 오류]: {error}")
+    except OSError as error:
+        print(f"[파일 저장 오류]: {error}")
+    else:
+        print(f"[예산 조회] {date_month} 예산: {result:,}원")
 
 def category_add(service:TransactionService) -> None:
     while True:
@@ -405,6 +425,8 @@ def main():
     elif args.command == "budget":
         if args.budget_command == "set":
             budget_transactions(service=service, date_month=args.date_month, amount=args.amount)
+        elif args.budget_command == "show":
+            budget_check(service=service, date_month=args.date_month)
     elif args.command == "category":
         if args.category_command == "add":
             category_add(service=service)
