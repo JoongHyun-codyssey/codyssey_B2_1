@@ -417,3 +417,10 @@ class TransactionService:
             raise ValueError("월은 YYYY-MM 형식으로 입력해 주세요.")
 
         return month_text
+
+    def validate_transaction_id(self, id: str) -> bool:
+        for transaction in self.repository.read_transaction():
+            if transaction["id"] == id:
+                return True
+            
+        raise ValueError("등록되지 않은 id입니다.")

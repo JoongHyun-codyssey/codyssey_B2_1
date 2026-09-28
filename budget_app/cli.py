@@ -150,6 +150,12 @@ def update_transactions(
         args_id:str
     ) -> None:
 
+    try:
+        service.validate_transaction_id(args_id)
+    except ValueError as error:
+        print(f"[에러]: {error}")
+        return
+
     while True:
         raw_choice = input("수정할 필드를 선택하세요.\n1.날짜\n2.타입\n3.카테고리\n4.가격\n5.메모\n6.태그\n번호를 입력하세요: ")
         try:
@@ -196,6 +202,7 @@ def update_transactions(
 
         except ValueError as error:
             print(f"[에러]: {error}")
+            exit()
 
 
     print(f"[수정 완료] id = {args_id}")
@@ -205,6 +212,12 @@ def delete_transactions(
     service: TransactionService,
     args_id: str
     ) -> None:
+    try:
+        service.validate_transaction_id(args_id)
+    except ValueError as error:
+        print(f"[에러]: {error}")
+        return
+
     confirmation = input("정말 삭제하시겠습니까? (y/n): ").strip().lower()
 
     if confirmation != "y":
