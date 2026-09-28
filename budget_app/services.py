@@ -7,7 +7,6 @@ from .storage import TransactionRepository, CategoryRepository, BudgetRepository
 from .models import Transaction
 
 space = "\n"
-
 class TransactionService:
     def __init__(self,
                  repository: TransactionRepository,
@@ -28,7 +27,7 @@ class TransactionService:
             tags: list[str]
             ) -> Transaction :
         transaction = Transaction(
-            id=str(uuid4()),
+            id=self.generate_id(),
             date=date_text,
             type=transaction_type,
             category=category,
@@ -433,3 +432,16 @@ class TransactionService:
 
         return path
 
+    def generate_id(self) -> str:
+        while True:
+            trasaction_id = uuid4().hex[:6]
+
+            duplicate = False
+
+            for transaction in self.repository.read_transaction():
+                if transaction["id"] == trasaction_id:
+                    duplicate = True
+                    break
+
+            if not duplicate:
+                return trasaction_id

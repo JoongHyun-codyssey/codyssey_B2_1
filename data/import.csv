@@ -1,33 +1,33 @@
 column,required,설명
-id,Y,b57ed718-375e-4199-94c9-81506857d521
+id,Y,b57ed7
 date,Y,2026-09-22
 type,Y,expense
 category,Y,food
 amount,Y,12000
 memo,N,점심 식사
 tags,N,"점심, 외식"
-id,Y,ae341921-5439-483d-8ba1-e5012309d652
+id,Y,ae3419
 date,Y,2026-09-23
 type,Y,expense
 category,Y,transport
 amount,Y,1500
 memo,N,버스 이용
 tags,N,출근
-id,Y,c953d180-2465-441a-92d8-370ac564e783
+id,Y,c953d1
 date,Y,2026-09-24
 type,Y,expense
 category,Y,veggies
 amount,Y,18000
 memo,N,채소 구매
 tags,N,"장보기, 식단"
-id,Y,d21b6894-7132-457c-a093-862fa945b814
+id,Y,d21b68
 date,Y,2026-09-24
 type,Y,income
 category,Y,food
 amount,Y,5000
 memo,N,주문 취소 환불
 tags,N,환불
-id,Y,e604a753-8021-498b-b174-926cd385a945
+id,Y,e604a7
 date,Y,2026-09-25
 type,Y,expense
 category,Y,food
