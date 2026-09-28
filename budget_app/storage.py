@@ -110,17 +110,31 @@ class TransactionRepository:
         try:
             with temp_path.open("w", encoding="utf-8", newline="") as file:
                 writer = csv.DictWriter(
-                    file,
-                    fieldnames=["id", "type", "date", "amount", "category", "memo", "tags"],
-                )
+                        file,
+                        fieldnames=["column", "required", "설명"],
+                    )
                 writer.writeheader()
 
                 for transaction in transactions:
-                    row = transaction.copy()
-                    row["tags"] = ", ".join(transaction["tags"])
+                    for column in ["id", "date", "type", "category", "amount", "memo", "tags"]:
+                        value = transaction[column]
 
-                    writer.writerow(row)
+                        if column == "tags":
+                            value = ", ".join(value)
+
+                        writer.writerow({
+                            "column": column,
+                            "required": "N" if column in ("memo", "tags") else "Y",
+                            "설명": value,
+                        })
+
                     count += 1
+
+                writer.writerow({
+                    "column": "공통: UTF-8, 헤더 포함",
+                    "required": "",
+                    "설명": "",
+                })
 
             temp_path.replace(output_path)
 
@@ -130,8 +144,9 @@ class TransactionRepository:
             if temp_path.exists():
                 temp_path.unlink()
 
-    def read_csv(self, input_path = Path) -> Iterator[dict[str, str]]:
-        required_fields = {
+    def read_csv(self, input_path: Path) -> Iterator[dict[str, str]]:
+        required_headers = {"column", "required", "설명"}
+        transaction_fields = {
             "id", "type", "date", "amount", "category", "memo", "tags"
         }
 
@@ -141,8 +156,10 @@ class TransactionRepository:
             if reader.fieldnames is None:
                 raise ValueError("CSV 헤더가 없습니다.")
 
-            if not required_fields.issubset(reader.fieldnames):
+            if not required_headers.issubset(reader.fieldnames):
                 raise ValueError("CSV에 필수 컬럼이 누락되어 있습니다.")
+
+            transaction = {}
 
             for row in reader:
                 if None in row:
@@ -155,7 +172,64 @@ class TransactionRepository:
                         f"CSV {reader.line_num}줄: 값이 누락된 컬럼이 있습니다."
                     )
 
-                yield row
+                column = row["column"].strip()
+                required = row["required"].strip()
+                value = row["설명"]
+
+                if column not in transaction_fields:
+                    raise ValueError(
+                        f"CSV {reader.line_num}줄: 알 수 없는 필드입니다: {column}"
+                    )
+
+                expected_required = "N" if column in ("memo", "tags") else "Y"
+
+                if required != expected_required:
+                    raise ValueError(
+                        f"CSV {reader.line_num}줄: "
+                        f"{column}의 required는 {expected_required}이어야 합니다."
+                    )
+
+                if required == "Y" and not value.strip():
+                    raise ValueError(
+                        f"CSV {reader.line_num}줄: {column} 값은 필수입니다."
+                    )
+
+                # 새로운 id가 나오면 이전 거래를 반환
+                if column == "id" and transaction:
+                    missing = transaction_fields - transaction.keys()
+
+                    if missing:
+                        raise ValueError(
+                            f"거래에 필드가 누락되어 있습니다: "
+                            f"{', '.join(sorted(missing))}"
+                        )
+
+                    yield transaction
+                    transaction = {}
+
+                if not transaction and column != "id":
+                    raise ValueError(
+                        f"CSV {reader.line_num}줄: 거래는 id 행으로 시작해야 합니다."
+                    )
+
+                if column in transaction:
+                    raise ValueError(
+                        f"CSV {reader.line_num}줄: 중복된 필드입니다: {column}"
+                    )
+
+                transaction[column] = value
+
+            # 마지막 거래는 다음 id가 없으므로 반복문 밖에서 반환
+            if transaction:
+                missing = transaction_fields - transaction.keys()
+
+                if missing:
+                    raise ValueError(
+                        f"거래에 필드가 누락되어 있습니다: "
+                        f"{', '.join(sorted(missing))}"
+                    )
+
+                yield transaction
 
     def import_transactions(
             self,
