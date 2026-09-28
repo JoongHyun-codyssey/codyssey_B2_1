@@ -200,7 +200,8 @@ class TransactionService:
             # 예산 사용률
             usage_rate = total_expense / budget_amount * 100
 
-            if total_expense > usage_rate:
+            # 총 지출 > 예산
+            if total_expense > budget_amount:
                 warning_msg = "예산 대비 사용률이 초과했습니다!"
 
         else:
@@ -387,8 +388,7 @@ class TransactionService:
 
     def validate_category(self, category: str) -> None:
         if not self.category_repository.exists(category):
-            print(f"{space * 10}등록되지 않은 카테고리입니다.\n카테고리를 먼저 등록해주세요: {category}")
-            quit()
+            raise ValueError(f"{space * 10}[에러] 등록되지 않은 카테고리입니다.\n카테고리를 먼저 등록해주세요: {category}")
 
     @staticmethod
     def validate_date(date_text: str)-> str:

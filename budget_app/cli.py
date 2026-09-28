@@ -101,7 +101,8 @@ def add_transactions(service: TransactionService) -> None:
             service.validate_category(category=category)
             break
         except ValueError as error:
-            print(f"[에러] {error}")
+            print(f"{error}")
+            return
         except OSError as error:
             print(f"[파일 읽기 오류] {error}")
             return
@@ -202,7 +203,6 @@ def update_transactions(
 
         except ValueError as error:
             print(f"[에러]: {error}")
-            exit()
 
 
     print(f"[수정 완료] id = {args_id}")
