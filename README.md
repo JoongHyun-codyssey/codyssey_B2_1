@@ -41,6 +41,9 @@ budget-project/
 │   ├── budgets.jsonl
 │   ├── export.csv
 │   └── import.csv
+├── image/
+│   ├── ...
+│   └── (기타 실습 이미지)
 ├── README.md
 └── .gitignore
 ```
@@ -328,6 +331,6 @@ JSONL 파일 순차 탐색
 - [x] 최신순 정렬, 검색 조건 조합 및 출력 개수 제한
 - [x] CSV 중복 ID·잘못된 행 검증 및 import/export 왕복 확인
 - [x] 파일 기록 실패 시 원본 데이터 보존
-- [ ] 모든 명령의 `--help` 및 `--data-dir` 동작 확인
+- [x] 모든 명령의 `--help` 및 `--data-dir` 동작 확인
 
 구현이 진행되면 완료한 항목을 체크하고, 실제 실행 결과와 테스트 방법을 추가합니다.

@@ -424,3 +424,12 @@ class TransactionService:
                 return True
             
         raise ValueError("등록되지 않은 id입니다.")
+
+    def validate_data_dir(self, data_path: str) -> Path:
+        path = Path(data_path).expanduser()
+
+        if path.exists() and not path.is_dir():
+            raise ValueError("데이터 경로가 디렉터리가 아닙니다.")
+
+        return path
+

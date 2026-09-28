@@ -6,6 +6,13 @@ from .decorators import measure_time
 def build_parser() -> ArgumentParser:
     parser = argparse.ArgumentParser(description="argument 설명")
 
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default="./data",
+        help="데이터 저장 폴더 변경"
+    )
+
     subparser = parser.add_subparsers(dest="command", required=True)
     subparser.add_parser("add", help="거래 추가 명령어")
 
@@ -418,10 +425,23 @@ def import_data(
 def main():
     parser = build_parser()
     args = parser.parse_args()
-    repository = TransactionRepository()
-    category_repository = CategoryRepository()
-    budget_repository = BudgetRepository()
-    service = TransactionService(repository, category_repository, budget_repository)
+
+    try:
+        data_dir = Path(args.data_dir)
+        data_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        print(f"[에러]: 데이터 폴더를 사용할 수 없습니다. {error}")
+        return
+
+    repository = TransactionRepository(data_dir=data_dir)
+    category_repository = CategoryRepository(data_dir=data_dir)
+    budget_repository = BudgetRepository(data_dir=data_dir)
+
+    service = TransactionService(
+        repository=repository,
+        category_repository=category_repository,
+        budget_repository=budget_repository
+    )
 
     if args.command == "add":
         add_transactions(service=service)
