@@ -1,11 +1,13 @@
 from functools import wraps
 from time import perf_counter
-from typing import Callable
+from typing import Callable, TypeVar
+
+ReturnT = TypeVar("ReturnT")
 
 
-def measure_time(func: Callable[[], None]) -> Callable[[], None]:
+def measure_time(func: Callable[[], ReturnT]) -> Callable[[], ReturnT]:
     @wraps(func)
-    def wrapper() -> None:
+    def wrapper() -> ReturnT:
         start = perf_counter()
 
         try:

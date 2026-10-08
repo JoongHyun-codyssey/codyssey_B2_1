@@ -2,7 +2,7 @@ import heapq
 from uuid import uuid4
 from datetime import date
 from pathlib import Path
-from typing import Literal, Optional, Any, Iterator, Generator
+from typing import Literal, Optional, Any, Iterator, Generator, Union
 from .storage import TransactionRepository, CategoryRepository, BudgetRepository, read_jsonl
 from .models import Transaction
 
@@ -149,7 +149,10 @@ class TransactionService:
             self,
             date_month : str,
             top_n: Optional[int] = None,
-            ):
+            ) -> dict[
+                        str,
+                        Union[int, float, str, list[tuple[str, int]], None]
+                    ]:
         total_income = 0
         total_expense = 0
         category_expenses = {}

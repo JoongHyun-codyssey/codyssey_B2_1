@@ -144,6 +144,7 @@ def add_transactions(service: TransactionService) -> None:
         print(f"[파일 처리 오류] {error}")
     else:
         print(f"[저장 완료] id = {transaction.id}")
+        return 0
 
 # 목록 조회
 def list_transactions(service: TransactionService, limit)-> None:
@@ -422,7 +423,7 @@ def import_data(
         f"중복 건너뜀 {skipped_count}건")
 
 @measure_time
-def main():
+def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
@@ -431,7 +432,7 @@ def main():
         data_dir.mkdir(parents=True, exist_ok=True)
     except OSError as error:
         print(f"[에러]: 데이터 폴더를 사용할 수 없습니다. {error}")
-        return
+        return 0
 
     repository = TransactionRepository(data_dir=data_dir)
     category_repository = CategoryRepository(data_dir=data_dir)
@@ -472,4 +473,5 @@ def main():
     elif args.command == "import":
         import_data(service=service, import_from=args.import_from)
 
+    return 0
 
