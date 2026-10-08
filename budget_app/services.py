@@ -437,7 +437,7 @@ class TransactionService:
 
     def generate_id(self) -> str:
         while True:
-            trasaction_id = uuid4().hex[:6]
+            transaction_id = uuid4().hex[:6]
 
             duplicate = False
 
